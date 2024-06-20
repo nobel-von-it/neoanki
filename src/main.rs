@@ -2,6 +2,7 @@ mod consts;
 mod data;
 mod flags;
 mod game;
+mod input;
 mod states;
 
 use crossterm::{
@@ -15,31 +16,39 @@ use std::io::stdout;
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     enable_raw_mode()?;
-    execute!(stdout(), EnterAlternateScreen, EnableMouseCapture)?;
+    execute!(
+        stdout(),
+        EnterAlternateScreen,
+        EnableMouseCapture,
+        crossterm::cursor::Hide,
+        crossterm::terminal::SetSize(100, 50),
+        crossterm::terminal::SetTitle("NeoAnki"),
+    )?;
 
-    let mut game = Game::start();
-    let res = run(&mut game);
+    let mut game = Game::start().await;
+    let res = run(&mut game).await;
 
     disable_raw_mode()?;
-    execute!(stdout(), LeaveAlternateScreen, DisableMouseCapture)?;
+    execute!(
+        stdout(),
+        LeaveAlternateScreen,
+        DisableMouseCapture,
+        crossterm::cursor::Show
+    )?;
 
     res?;
     Ok(())
 }
 
-fn run(game: &mut Game) -> anyhow::Result<()> {
+async fn run(game: &mut Game) -> anyhow::Result<()> {
     loop {
+        game.draw().await?;
         if let Event::Key(key) = event::read()? {
             if key.kind == KeyEventKind::Release {
                 continue;
             }
-            execute!(
-                stdout(),
-                crossterm::terminal::Clear(crossterm::terminal::ClearType::All),
-                crossterm::cursor::MoveTo(0, 0)
-            )?;
             match key.code {
-                KeyCode::Esc => game.state = states::State::Input,
+                KeyCode::Esc => break,
                 KeyCode::Left => game.field.left(),
                 KeyCode::Right => game.field.right(),
                 KeyCode::Backspace => game.field.del(),
@@ -47,11 +56,12 @@ fn run(game: &mut Game) -> anyhow::Result<()> {
                 KeyCode::Enter => match game.state {
                     states::State::Input => match game.field.get_command() {
                         states::InputCommands::Start => {
-                            game.state = states::State::Game;
+                            game.start_game();
                         }
                         states::InputCommands::Exit => {
                             break;
                         }
+                        states::InputCommands::Help => {}
                         _ => {}
                     },
                     states::State::Game => {

@@ -19,11 +19,11 @@ impl Questions {
     // }
     pub fn load() -> Self {
         let dir_path = consts::full_dir_name();
-        let file_path = consts::full_file_name("de");
+        let file_path = consts::full_file_name(consts::DEF_LANG);
         let mut file = std::fs::File::open(file_path.clone()).unwrap_or_else(|_| {
             let _ = std::fs::create_dir_all(dir_path.clone());
             let _ = std::fs::File::create(file_path.clone());
-            std::fs::File::open(file_path).unwrap()
+            std::fs::File::open(&file_path).unwrap()
         });
         let questions: Questions =
             serde_json::from_reader(&mut file).unwrap_or(Questions { questions: vec![] });
@@ -31,7 +31,7 @@ impl Questions {
     }
     pub fn save(&self) {
         let dir_path = consts::full_dir_name();
-        let file_path = consts::full_file_name("de");
+        let file_path = consts::full_file_name(consts::DEF_LANG);
         let mut file = std::fs::File::create(file_path.clone()).unwrap_or_else(|_| {
             let _ = std::fs::create_dir_all(dir_path.clone());
             std::fs::File::create(file_path.clone()).unwrap()
@@ -44,12 +44,11 @@ impl Questions {
 pub struct Question {
     pub sentence: String,
     pub answer: String,
-    pub lang: String,
 }
 
 impl Question {
     pub async fn trans(&self) -> String {
-        rust_translate::translate(&self.sentence, &self.lang, "ru")
+        rust_translate::translate(&self.sentence, consts::DEF_LANG, "ru")
             .await
             .unwrap()
     }

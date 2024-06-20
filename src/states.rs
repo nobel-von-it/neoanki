@@ -1,3 +1,5 @@
+use core::fmt;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum State {
     Game,
@@ -18,19 +20,6 @@ pub enum InputCommands {
     None,
 }
 impl InputCommands {
-    pub fn to_string(&self) -> String {
-        match self {
-            InputCommands::Start => String::from("start"),
-            InputCommands::Exit => String::from("exit"),
-            InputCommands::Next => String::from("next"),
-            InputCommands::Prev => String::from("prev"),
-            InputCommands::Help => String::from("help"),
-            InputCommands::Add => String::from("add"),
-            InputCommands::Remove => String::from("remove"),
-            InputCommands::Edit => String::from("edit"),
-            InputCommands::None => String::from("none"),
-        }
-    }
     pub fn from_string(s: &str) -> Self {
         match s {
             "start" | "begin" | "new" | "continue" => InputCommands::Start,
@@ -42,6 +31,21 @@ impl InputCommands {
             "remove" | "delete" | "drop" => InputCommands::Remove,
             "edit" | "update" | "change" | "modify" => InputCommands::Edit,
             _ => InputCommands::None,
+        }
+    }
+}
+impl fmt::Display for InputCommands {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            InputCommands::Start => write!(f, "start"),
+            InputCommands::Exit => write!(f, "exit"),
+            InputCommands::Next => write!(f, "next"),
+            InputCommands::Prev => write!(f, "prev"),
+            InputCommands::Help => write!(f, "help"),
+            InputCommands::Add => write!(f, "add"),
+            InputCommands::Remove => write!(f, "remove"),
+            InputCommands::Edit => write!(f, "edit"),
+            InputCommands::None => write!(f, "none"),
         }
     }
 }

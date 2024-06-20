@@ -1,11 +1,15 @@
 pub const NAME: &str = "NEOANKI";
 pub const VERSION: &str = "0.1.0";
 pub const AUTHOR: &str = "Nerd";
+pub const QUESTION_POS: u16 = 3;
+pub const COMMAND_TEXT: &str = "User input interface";
+
 const DIR_NAMEL: &str = ".neoanki";
 const DIR_NAMEW: &str = "Neoanki";
 
 /// main languages
 pub const LANGS: [&str; 3] = ["en", "de", "jp"];
+pub const DEF_LANG: &str = "de";
 pub const MY_LANG: &str = "ru";
 
 pub fn dir_name() -> &'static str {

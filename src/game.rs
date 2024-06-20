@@ -1,3 +1,9 @@
+use crate::consts;
+use core::fmt;
+use std::io::stdout;
+
+use crossterm::execute;
+
 use crate::{
     data::Question,
     states::{InputCommands, State},
@@ -7,47 +13,108 @@ use crate::{
 pub struct Game {
     pub state: State,
     pub question: Question,
+    pub translation: String,
     pub field: Field,
     pub result: String,
-    pub index: usize,
+    pub score: usize,
 }
 impl Game {
-    pub fn start() -> Self {
+    pub async fn start() -> Self {
         let state = State::Input;
         let question = Question::get_random();
+        let translation = question.trans().await;
         let field = Field::new();
         let result = String::new();
-        let index = 0;
         Self {
             state,
             question,
+            translation,
             field,
             result,
-            index,
+            score: 0,
         }
     }
-    pub fn cmp(&self) -> Option<String> {
+    pub async fn update(&mut self) {
+        self.state = State::Game;
+        self.question = Question::get_random();
+        self.translation = self.question.trans().await;
+        self.field = Field::new();
+        self.result = String::new();
+    }
+    pub async fn check(&mut self) {}
+    pub fn cmp(&self) -> Option<(String, bool)> {
         let right = self.question.answer.clone();
         let left = self.field.to_string();
         if left.len() == right.len() {
             // string with + or - symbols
             let mut res = String::new();
+            let mut counter = 0;
             for i in 0..left.len() {
                 if left.chars().nth(i).unwrap() == right.chars().nth(i).unwrap() {
                     res.push('+');
+                    counter += 1;
                 } else {
                     res.push('-');
                 }
             }
-            return Some(res);
+            if counter == right.len() {
+                return Some((res, true));
+            }
+            return Some((res, false));
         }
         // None means full incorrect answer
         None
     }
-    pub fn draw(&self) {
-        println!("\x1B[2J\x1B[1;1H");
-        println!("{}: {}", self.field.pos, self.field.show());
-        println!("{}", self.result);
+    pub async fn draw(&self) -> anyhow::Result<()> {
+        // clear terminal and move cursor to top
+        execute!(
+            stdout(),
+            crossterm::terminal::Clear(crossterm::terminal::ClearType::All),
+            crossterm::cursor::MoveTo(0, 0)
+        )?;
+        let (x, _y) = crossterm::terminal::size()?;
+        match self.state {
+            State::Input => {
+                execute!(
+                    stdout(),
+                    crossterm::cursor::MoveTo((x / 2) - (x / 4), consts::QUESTION_POS)
+                )?;
+                println!("{}", consts::COMMAND_TEXT);
+
+                execute!(
+                    stdout(),
+                    crossterm::cursor::MoveTo((x / 2) - (x / 4), consts::QUESTION_POS + 1)
+                )?;
+                println!("{}", self.field.show());
+            }
+            State::Game => {
+                execute!(
+                    stdout(),
+                    crossterm::cursor::MoveTo(
+                        (x / 2) - (self.question.sentence.len() as u16 / 2),
+                        consts::QUESTION_POS
+                    )
+                )?;
+                println!("{}", self.question.sentence);
+
+                // execute!(
+                //     stdout(),
+                //     crossterm::cursor::MoveTo((x / 2) - (self.translation.len() as u16 / 2), 3)
+                // )?;
+                // println!("{}", self.translation.trim());
+
+                execute!(
+                    stdout(),
+                    crossterm::cursor::MoveTo(
+                        (x / 2) - (self.field.text.len() as u16 / 2),
+                        consts::QUESTION_POS + 3
+                    ),
+                )?;
+                println!("{}", self.field.show());
+            }
+            State::QuestionManager => {}
+        }
+        Ok(())
     }
 }
 
@@ -70,7 +137,7 @@ impl Field {
         }
     }
     pub fn right(&mut self) {
-        if self.pos < self.text.len() - 1 && self.text.len() != 0 {
+        if self.pos < self.text.len() - 1 && !self.text.is_empty() {
             self.pos += 1
         }
     }
@@ -79,13 +146,10 @@ impl Field {
         self.right();
     }
     pub fn del(&mut self) {
-        if self.pos < self.text.len() {
+        if self.text.len() > 1 && self.pos > 0 {
             self.text.remove(self.pos);
             self.left();
         }
-    }
-    pub fn to_string(&self) -> String {
-        self.text.iter().collect()
     }
     pub fn get_command(&self) -> InputCommands {
         InputCommands::from_string(&self.to_string())
@@ -96,12 +160,17 @@ impl Field {
             .enumerate()
             .map(|(i, c)| {
                 if i == self.pos {
-                    format!("{}", c)
+                    format!("{c}|")
                 } else {
-                    format!("_")
+                    format!("{c}")
                 }
             })
             .collect::<Vec<String>>()
             .join("")
+    }
+}
+impl fmt::Display for Field {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.text.iter().collect::<String>())
     }
 }
