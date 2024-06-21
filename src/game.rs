@@ -171,6 +171,6 @@ impl Field {
 }
 impl fmt::Display for Field {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.text.iter().collect::<String>())
+        write!(f, "{}", self.text.iter().skip(1).collect::<String>())
     }
 }

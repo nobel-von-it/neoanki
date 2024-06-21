@@ -56,7 +56,7 @@ async fn run(game: &mut Game) -> anyhow::Result<()> {
                 KeyCode::Enter => match game.state {
                     states::State::Input => match game.field.get_command() {
                         states::InputCommands::Start => {
-                            game.start_game();
+                            game.update().await;
                         }
                         states::InputCommands::Exit => {
                             break;
