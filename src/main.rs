@@ -11,6 +11,10 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use game::Game;
+use ratatui::{
+    backend::{Backend, CrosstermBackend},
+    Terminal,
+};
 use std::io::stdout;
 
 #[tokio::main]
@@ -25,8 +29,9 @@ async fn main() -> anyhow::Result<()> {
         crossterm::terminal::SetTitle("NeoAnki"),
     )?;
 
+    let mut term = Terminal::new(CrosstermBackend::new(stdout()))?;
     let mut game = Game::start().await;
-    let res = run(&mut game).await;
+    let res = run(&mut term, &mut game).await;
 
     disable_raw_mode()?;
     execute!(
@@ -40,9 +45,9 @@ async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn run(game: &mut Game) -> anyhow::Result<()> {
+async fn run<B: Backend>(term: &mut Terminal<B>, game: &mut Game) -> anyhow::Result<()> {
     loop {
-        game.draw().await?;
+        term.draw(|f| game.draw_ui(f))?;
         if let Event::Key(key) = event::read()? {
             if key.kind == KeyEventKind::Release {
                 continue;
@@ -61,11 +66,17 @@ async fn run(game: &mut Game) -> anyhow::Result<()> {
                         states::InputCommands::Exit => {
                             break;
                         }
+                        states::InputCommands::Add
+                        | states::InputCommands::Remove
+                        | states::InputCommands::Edit => {
+                            game.state = states::State::QuestionManager;
+                        }
                         states::InputCommands::Help => {}
                         _ => {}
                     },
+
                     states::State::Game => {
-                        game.state = states::State::Input;
+                        game.check().await;
                     }
                     _ => {}
                 },

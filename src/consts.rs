@@ -2,7 +2,8 @@ pub const NAME: &str = "NEOANKI";
 pub const VERSION: &str = "0.1.0";
 pub const AUTHOR: &str = "Nerd";
 pub const QUESTION_POS: u16 = 3;
-pub const COMMAND_TEXT: &str = "User input interface";
+pub const COMMAND_TEXT: &str = "Enter command:";
+pub const WIN_SCORE: u16 = 5;
 
 const DIR_NAMEL: &str = ".neoanki";
 const DIR_NAMEW: &str = "Neoanki";

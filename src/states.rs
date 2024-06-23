@@ -3,8 +3,22 @@ use core::fmt;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum State {
     Game,
+    Check,
     Input,
     QuestionManager,
+    Win,
+}
+
+impl fmt::Display for State {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            State::Game => write!(f, "Game"),
+            State::Check => write!(f, "Check"),
+            State::Input => write!(f, "Input"),
+            State::QuestionManager => write!(f, "QuestionManager"),
+            State::Win => write!(f, "Win"),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
