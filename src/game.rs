@@ -4,7 +4,7 @@ use std::{io::stdout, rc::Rc};
 
 use crossterm::execute;
 use ratatui::{
-    layout::{Constraint, Direction, Layout, Rect},
+    layout::{Alignment, Constraint, Direction, Layout, Rect},
     text::Text,
     widgets::{block::BlockExt, Block, Borders, Paragraph},
     Frame,
@@ -18,6 +18,7 @@ use crate::{
 #[derive(Debug, Clone)]
 pub struct Game {
     pub state: State,
+    pub last_state: GameState,
     pub question: Question,
     pub translation: String,
     pub field: Field,
@@ -25,20 +26,44 @@ pub struct Game {
     pub score: u16,
 }
 impl Game {
-    pub async fn start() -> Self {
+    pub fn start() -> Self {
         let state = State::Input;
-        let question = Question::get_random();
-        let translation = question.trans().await;
+        let last_state = GameState::new();
+        let question = Question::default();
+        let translation = String::new();
         let field = Field::new();
         let result = String::new();
         Self {
             state,
+            last_state,
             question,
             translation,
             field,
             result,
             score: 0,
         }
+    }
+    pub fn switch(&mut self) {
+        // if self.state == State::Input && self.last_state == State::Input {
+        //     return;
+        // }
+        // if self.state == State::Input {
+        //     self.state = self.last_state.clone();
+        //     return;
+        // }
+        // self.last_state = self.state.clone();
+        // self.state = State::Input;
+        if self.state == State::Input && self.last_state.state == State::Input {
+            return;
+        }
+        if self.state == State::Input {
+            self.state = self.last_state.state.clone();
+            self.field = Field::from(&self.last_state.field);
+            return;
+        }
+        self.last_state = GameState::from(self.state.clone(), self.field.show());
+        self.state = State::Input;
+        self.field = Field::new();
     }
     pub async fn update(&mut self) {
         self.state = State::Game;
@@ -48,6 +73,7 @@ impl Game {
         self.result = String::new();
     }
     pub async fn check(&mut self) {
+        self.state = State::Check;
         let right = self.question.answer.clone();
         let left = self.field.to_string();
         if left.len() == right.len() {
@@ -66,7 +92,7 @@ impl Game {
                 self.score += 1;
             }
             self.translation = self.question.trans().await;
-            self.result = format!("{} --- {}", res, persentage);
+            self.result = format!("{} == {}%", res, persentage);
             if self.score >= consts::WIN_SCORE {
                 self.state = State::Win;
             }
@@ -183,7 +209,7 @@ impl Game {
         let footer_layout = Self::get_footer_layouts(f);
         match self.state {
             State::Input => {
-                let field = Self::get_centered(self.field.show()).block(
+                let field = Paragraph::new(Text::from(self.field.show())).block(
                     Block::default()
                         .borders(Borders::ALL)
                         .title(consts::COMMAND_TEXT),
@@ -192,10 +218,9 @@ impl Game {
                 f.render_widget(field, Self::centered_rect(40, 10, f.size()));
             }
             State::Game => {
-                let question = Self::get_centered(self.question.sentence.clone())
+                let question = get_centered(self.question.sentence.clone())
                     .block(Block::default().borders(Borders::ALL));
-                let field = Self::get_centered(self.field.show())
-                    .block(Block::default().borders(Borders::BOTTOM));
+                let field = get_centered(self.field.show());
 
                 let (score, state) = self.get_score_and_state();
 
@@ -205,11 +230,11 @@ impl Game {
                 f.render_widget(state, footer_layout[1]);
             }
             State::Check => {
-                let question = Paragraph::new(Text::raw(&self.question.sentence).centered());
-                let translation = Paragraph::new(Text::raw(&self.translation).centered());
-                let answer = Paragraph::new(Text::raw(&self.question.answer).centered());
-                let field = Paragraph::new(Text::raw(self.field.show()).centered());
-                let result = Paragraph::new(Text::raw(&self.result).centered());
+                let question = get_centered(self.question.sentence.clone());
+                let translation = get_centered(self.translation.clone());
+                let answer = get_centered(self.question.answer.clone());
+                let field = get_centered(self.field.show());
+                let result = get_centered(self.result.clone());
 
                 let (score, state) = self.get_score_and_state();
 
@@ -247,9 +272,6 @@ impl Game {
             ])
             .split(popup_layout[1])[1] // Return the middle chunk
     }
-    fn get_centered<'a>(text: String) -> Paragraph<'a> {
-        Paragraph::new(Text::raw(text).centered())
-    }
     fn get_score_and_state(&self) -> (Paragraph, Paragraph) {
         let score = Paragraph::new(format!("Score: {}", self.score));
         let state = Paragraph::new(format!("State: {}", self.state));
@@ -281,8 +303,11 @@ impl Game {
         Layout::default()
             .direction(Direction::Vertical)
             .constraints([
+                // Pseudo padding
                 Constraint::Percentage(20),
+                // Question
                 Constraint::Length(3),
+                // Question translation
                 Constraint::Length(1),
                 Constraint::Length(1),
                 Constraint::Length(1),
@@ -292,6 +317,10 @@ impl Game {
             ])
             .split(Self::get_body_layouts(f)[1])
     }
+}
+
+fn get_centered<'a>(text: String) -> Paragraph<'a> {
+    Paragraph::new(Text::from(text)).alignment(Alignment::Center)
 }
 
 #[derive(Debug, Clone)]
@@ -304,6 +333,13 @@ impl Field {
     pub fn new() -> Self {
         Self {
             text: vec!['\0'],
+            pos: 0,
+        }
+    }
+    pub fn from(text: &str) -> Self {
+        let text = format!("\0{}", text);
+        Self {
+            text: text.chars().collect(),
             pos: 0,
         }
     }
@@ -350,5 +386,22 @@ impl Field {
 impl fmt::Display for Field {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.text.iter().skip(1).collect::<String>())
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GameState {
+    pub state: State,
+    pub field: String,
+}
+impl GameState {
+    pub fn new() -> Self {
+        Self {
+            state: State::Input,
+            field: String::new(),
+        }
+    }
+    pub fn from(state: State, field: String) -> Self {
+        Self { state, field }
     }
 }

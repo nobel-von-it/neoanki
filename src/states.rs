@@ -15,7 +15,7 @@ impl fmt::Display for State {
             State::Game => write!(f, "Game"),
             State::Check => write!(f, "Check"),
             State::Input => write!(f, "Input"),
-            State::QuestionManager => write!(f, "QuestionManager"),
+            State::QuestionManager => write!(f, "Question manager"),
             State::Win => write!(f, "Win"),
         }
     }
@@ -36,8 +36,8 @@ pub enum InputCommands {
 impl InputCommands {
     pub fn from_string(s: &str) -> Self {
         match s {
-            "start" | "begin" | "new" | "continue" => InputCommands::Start,
-            "exit" | "quit" | "stop" | "end" => InputCommands::Exit,
+            "start" | "begin" | "new" | "continue" | "game" => InputCommands::Start,
+            "exit" | "quit" | "stop" | "end" | "q" => InputCommands::Exit,
             "next" | "skip" => InputCommands::Next,
             "prev" | "previous" | "back" | "undo" => InputCommands::Prev,
             "help" | "?" => InputCommands::Help,

@@ -47,6 +47,12 @@ pub struct Question {
 }
 
 impl Question {
+    pub fn default() -> Self {
+        Self {
+            sentence: String::new(),
+            answer: String::new(),
+        }
+    }
     pub async fn trans(&self) -> String {
         rust_translate::translate(&self.sentence, consts::DEF_LANG, "ru")
             .await

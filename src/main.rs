@@ -30,7 +30,7 @@ async fn main() -> anyhow::Result<()> {
     )?;
 
     let mut term = Terminal::new(CrosstermBackend::new(stdout()))?;
-    let mut game = Game::start().await;
+    let mut game = Game::start();
     let res = run(&mut term, &mut game).await;
 
     disable_raw_mode()?;
@@ -53,7 +53,7 @@ async fn run<B: Backend>(term: &mut Terminal<B>, game: &mut Game) -> anyhow::Res
                 continue;
             }
             match key.code {
-                KeyCode::Esc => break,
+                KeyCode::Esc => game.switch(),
                 KeyCode::Left => game.field.left(),
                 KeyCode::Right => game.field.right(),
                 KeyCode::Backspace => game.field.del(),
@@ -77,6 +77,12 @@ async fn run<B: Backend>(term: &mut Terminal<B>, game: &mut Game) -> anyhow::Res
 
                     states::State::Game => {
                         game.check().await;
+                    }
+                    states::State::Check => {
+                        game.update().await;
+                    }
+                    states::State::Win => {
+                        break;
                     }
                     _ => {}
                 },
