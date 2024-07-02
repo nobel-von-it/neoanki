@@ -10,7 +10,7 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use game::Game;
+use game::game::Game;
 use ratatui::{
     backend::{Backend, CrosstermBackend},
     Terminal,
@@ -52,14 +52,13 @@ async fn run<B: Backend>(term: &mut Terminal<B>, game: &mut Game) -> anyhow::Res
             if key.kind == KeyEventKind::Release {
                 continue;
             }
-            match key.code {
-                KeyCode::Esc => game.switch(),
-                KeyCode::Left => game.field.left(),
-                KeyCode::Right => game.field.right(),
-                KeyCode::Backspace => game.field.del(),
-                KeyCode::Char(c) => game.field.add(c),
-                KeyCode::Enter => match game.state {
-                    states::State::Input => match game.field.get_command() {
+            match game.state {
+                states::State::Input => match key.code {
+                    KeyCode::Left => game.field.left(),
+                    KeyCode::Right => game.field.right(),
+                    KeyCode::Backspace => game.field.del(),
+                    KeyCode::Char(c) => game.field.add(c),
+                    KeyCode::Enter => match game.field.get_command() {
                         states::InputCommands::Start => {
                             game.update().await;
                         }
@@ -74,18 +73,21 @@ async fn run<B: Backend>(term: &mut Terminal<B>, game: &mut Game) -> anyhow::Res
                         states::InputCommands::Help => {}
                         _ => {}
                     },
-
-                    states::State::Game => {
+                    _ => {}
+                },
+                states::State::Game => match key.code {
+                    KeyCode::Esc => game.switch(),
+                    KeyCode::Left => game.field.left(),
+                    KeyCode::Right => game.field.right(),
+                    KeyCode::Backspace => game.field.del(),
+                    KeyCode::Char(c) => game.field.add(c),
+                    KeyCode::Enter => {
                         game.check().await;
-                    }
-                    states::State::Check => {
-                        game.update().await;
-                    }
-                    states::State::Win => {
-                        break;
                     }
                     _ => {}
                 },
+                states::State::Check => game.update().await,
+                states::State::Win => break,
                 _ => {}
             }
         }
