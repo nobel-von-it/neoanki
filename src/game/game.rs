@@ -9,7 +9,7 @@ pub struct Game {
     pub question: Question,
     pub translation: String,
     pub field: Field,
-    pub result: String,
+    pub result: u16,
     pub score: u16,
 }
 impl Game {
@@ -19,14 +19,13 @@ impl Game {
         let question = Question::default();
         let translation = String::new();
         let field = Field::new();
-        let result = String::new();
         Self {
             state,
             last_state,
             question,
             translation,
             field,
-            result,
+            result: 0,
             score: 0,
         }
     }
@@ -57,21 +56,17 @@ impl Game {
         self.question = Question::get_random();
         self.translation = self.question.trans().await;
         self.field = Field::new();
-        self.result = String::new();
+        self.result = 0;
     }
     pub async fn check(&mut self) {
         self.state = State::Check;
         let right = self.question.answer.clone();
         let left = self.field.to_string();
         if left.len() == right.len() {
-            let mut res = String::new();
             let mut counter = 0;
             for i in 0..right.len() {
                 if left.chars().nth(i).unwrap() == right.chars().nth(i).unwrap() {
-                    res.push('+');
                     counter += 1;
-                } else {
-                    res.push('-');
                 }
             }
             let persentage = counter * 100 / right.len() as u16;
@@ -79,7 +74,7 @@ impl Game {
                 self.score += 1;
             }
             self.translation = self.question.trans().await;
-            self.result = format!("{} == {}%", res, persentage);
+            self.result = persentage;
             if self.score >= consts::WIN_SCORE {
                 self.state = State::Win;
             }

@@ -1,13 +1,13 @@
 use std::rc::Rc;
 
 use ratatui::{
-    layout::{Constraint, Direction, Layout, Rect},
+    layout::{Alignment, Constraint, Direction, Layout, Rect},
     text::Text,
     widgets::{Block, Borders, Paragraph},
     Frame,
 };
 
-use crate::{consts, states::State};
+use crate::{consts, main, states::State};
 
 use super::{
     game::Game,
@@ -82,17 +82,52 @@ impl Game {
                 f.render_widget(state, footer_layout[1]);
             }
             State::Check => {
-                let question = get_centered(self.question.sentence.clone());
+                let main_layout = Layout::default()
+                    .direction(Direction::Vertical)
+                    .constraints([Constraint::Percentage(100), Constraint::Length(1)])
+                    .split(f.size());
+                let game_layout = Layout::default()
+                    .direction(Direction::Vertical)
+                    .constraints([
+                        Constraint::Percentage(50),
+                        Constraint::Length(3),
+                        Constraint::Length(1),
+                        Constraint::Length(3),
+                        Constraint::Length(3),
+                        Constraint::Length(1),
+                        Constraint::Percentage(50),
+                    ])
+                    .split(
+                        Layout::default()
+                            .direction(Direction::Horizontal)
+                            .constraints([
+                                Constraint::Percentage(20),
+                                Constraint::Percentage(60),
+                                Constraint::Percentage(20),
+                            ])
+                            .split(main_layout[0])[1],
+                    );
+                let footer_layout = Layout::default()
+                    .direction(Direction::Horizontal)
+                    .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+                    .split(main_layout[1]);
+
                 let translation = get_centered(self.translation.clone());
-                let answer = get_centered(self.question.answer.clone());
-                let field = get_centered(self.field.show());
-                let result = get_centered(self.result.clone());
+
+                let question = Paragraph::new(Text::from(self.question.sentence.clone()))
+                    .alignment(Alignment::Center)
+                    .block(Block::default().borders(Borders::ALL));
+
+                let field = Paragraph::new(Text::from(format!(
+                    "Ожидалось: {}, введено: {}. Верно на {}%",
+                    self.field, self.question.answer, self.result
+                )))
+                .alignment(Alignment::Center)
+                .block(Block::default().borders(Borders::ALL));
 
                 f.render_widget(question, game_layout[1]);
                 f.render_widget(translation, game_layout[2]);
-                f.render_widget(answer, game_layout[5]);
-                f.render_widget(field, game_layout[6]);
-                f.render_widget(result, game_layout[7]);
+                f.render_widget(field, game_layout[4]);
 
                 f.render_widget(score, footer_layout[0]);
                 f.render_widget(state, footer_layout[1]);

@@ -5,6 +5,14 @@ pub const QUESTION_POS: u16 = 3;
 pub const COMMAND_TEXT: &str = "Enter command:";
 pub const WIN_SCORE: u16 = 5;
 
+pub const LOW_PERCENTAGE: u16 = 30;
+pub const HIGHEST_PERCENTAGE: u16 = 100;
+pub const MIDDLE_PERCENTAGE: u16 = 70;
+
+pub const LOW_PERCENTAGE_TEXT: &str = "Бро, тебе нужно больше тренироваться!";
+pub const MIDDLE_PERCENTAGE_TEXT: &str = "Ладно, заслужил, но больше не прощу.";
+pub const HIGHEST_PERCENTAGE_TEXT: &str = "Ты справился!";
+
 const DIR_NAMEL: &str = ".neoanki";
 const DIR_NAMEW: &str = "Neoanki";
 
