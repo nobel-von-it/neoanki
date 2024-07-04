@@ -1,3 +1,5 @@
+use log::info;
+
 use crate::{consts, data::Question, states::State};
 
 use super::field::Field;
@@ -5,7 +7,7 @@ use super::field::Field;
 #[derive(Debug, Clone)]
 pub struct Game {
     pub state: State,
-    pub last_state: GameState,
+    pub dump: Dump,
     pub question: Question,
     pub translation: String,
     pub field: Field,
@@ -15,13 +17,13 @@ pub struct Game {
 impl Game {
     pub fn start() -> Self {
         let state = State::Input;
-        let last_state = GameState::new();
+        let dump = Dump::new();
         let question = Question::default();
         let translation = String::new();
         let field = Field::new();
         Self {
             state,
-            last_state,
+            dump,
             question,
             translation,
             field,
@@ -30,24 +32,29 @@ impl Game {
         }
     }
     pub fn switch(&mut self) {
-        // if self.state == State::Input && self.last_state == State::Input {
+        // if self.state == State::Input && self.dump == State::Input {
         //     return;
         // }
         // if self.state == State::Input {
-        //     self.state = self.last_state.clone();
+        //     self.state = self.dump.clone();
         //     return;
         // }
-        // self.last_state = self.state.clone();
+        // self.dump = self.state.clone();
         // self.state = State::Input;
-        if self.state == State::Input && self.last_state.state == State::Input {
+        info!("In switch");
+        info!(
+            "Now state is {:?}, dump is {:?}",
+            self.state, self.dump.state
+        );
+        if self.state == State::Input && self.dump.state == State::Input {
             return;
         }
         if self.state == State::Input {
-            self.state = self.last_state.state.clone();
-            self.field = Field::from(&self.last_state.field.to_string());
+            self.state = self.dump.state.clone();
+            self.field = Field::from(&self.dump.field.to_string());
             return;
         }
-        self.last_state = GameState::from(self.state.clone(), self.field.to_string());
+        self.dump = Dump::from(self.state.clone(), self.field.to_string());
         self.state = State::Input;
         self.field = Field::new();
     }
@@ -83,11 +90,11 @@ impl Game {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct GameState {
+pub struct Dump {
     pub state: State,
     pub field: Field,
 }
-impl GameState {
+impl Dump {
     pub fn new() -> Self {
         Self {
             state: State::Input,
